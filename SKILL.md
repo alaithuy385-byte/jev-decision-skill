@@ -1,6 +1,6 @@
 ---
 name: jev-decision
-description: "调用 TypeSafe AI 的 Jev（System One）决策模型，把材料 + 明确问题换成可编程的判断结果（是/否概率、单选题、评分），而不是生成文本。当用户要求『用 Jev 判断』『让模型给个决策/路由/打分』『TypeSafe / typesafe-ai / systemone / Jev』，或需要在工作流里做分类、路由、风险判定、评分、命令/改动放行门禁时使用。默认走免密钥通道，无需任何 API key。"
+description: "调用 TypeSafe AI 的 Jev（System One）决策模型，把材料 + 明确问题换成可编程的判断结果（是/否概率、单选题、评分），而不是生成文本。当用户要求『用 Jev 判断』『让模型给个决策/路由/打分』『TypeSafe / typesafe-ai / systemone / Jev』，或需要在工作流里做分类、路由、风险判定、评分、命令/改动放行门禁时使用。默认走 TypeSafe 官方端点（需 TYPESAFE_API_KEY）；没有 key 时可加 `--endpoint playground` 走第三方免密钥通道先试手感。"
 agent_created: true
 ---
 
@@ -16,8 +16,9 @@ TypeSafe AI 的 System One 模型。**它不是聊天模型**：你给它材料�
 
 | 项 | 值 |
 |---|---|
-| 免密钥端点 | `POST https://jevplayground.com/api/evaluate` |
-| 认证 | **不需要**（第三方 playground，有限速） |
+| 默认端点 | `POST https://api.typesafe.ai/v1/systemone` — 需 `TYPESAFE_API_KEY` |
+| 免密钥端点（试用） | `POST https://jevplayground.com/api/evaluate` — 第三方站点，有限速 |
+| 认证 | 默认端点发 `Authorization: Bearer $TYPESAFE_API_KEY`；playground 不需要 |
 | 请求体 | 原生 Jev 格式 + 下文两个坑 |
 | 响应 | `{ok, model:"typesafe-ai/jev", latencyMs, result:{answers, usage, confidence, warnings}}` |
 | 实测延迟 | 直连 0.3–1.6 s |
@@ -64,7 +65,7 @@ TypeSafe AI 的 System One 模型。**它不是聊天模型**：你给它材料�
 
 - `choice` 的 `criteria` 是**字典**（选项名 → 说明），`null` 说明可接受；给一个兜底选项（如 `other`）避免被迫分类。
 - `score` 的 `criteria` 是**有序数组**，从低到高，下标从 0 开始。
-- playground 限速/限额：`state` ≤ 8000 字符、`instructions` ≤ 2000 字符。
+- playground 通道限速/限额：`state` ≤ 8000 字符、`instructions` ≤ 2000 字符。其他通道通常更宽。
 
 ## 响应
 
@@ -89,25 +90,27 @@ TypeSafe AI 的 System One 模型。**它不是聊天模型**：你给它材料�
 ```bash
 "<python>" "<本 skill>/scripts/jev.py" payload.json          # 人类可读
 "<python>" "<本 skill>/scripts/jev.py" payload.json --json   # 原始 JSON
-"<python>" "<本 skill>/scripts/jev.py" --selftest            # 自检
+"<python>" "<本 skill>/scripts/jev.py" --endpoint playground --selftest   # 免密钥自检
 ```
 
 - `<python>` 用托管解释器绝对路径，例如
   `C:\Users\16913\.workbuddy\binaries\python\versions\3.13.12\python.exe`（本机无 `python3`）。
+- **默认通道是 `typesafe`，需要 `TYPESAFE_API_KEY`**；没有 key 时给每条命令加
+  `--endpoint playground`，或设 `JEV_ENDPOINT=playground`。
 - 脚本纯标准库、零依赖。传输策略：**先直连**，失败再自动重试本地代理
   `127.0.0.1:7890` / `127.0.0.1:58252`；也可 `--proxy <url>` 强制指定。
 - 脚本会在发请求前本地校验 payload，并打印清晰的字段级报错。
 
-## 拿到 key 后怎么升级
+## 通道切换
 
-需要更高额度或更稳定的服务时，用 `--endpoint` 切换（脚本已内置）：
+四条通道都内置了，用 `--endpoint` 切换，也可以设 `JEV_ENDPOINT` 环境变量：
 
 | `--endpoint` | 地址 | 需要的环境变量 | 模型名 |
 |---|---|---|---|
-| `playground`（默认） | `jevplayground.com/api/evaluate` | 无 | `typesafe-ai/jev` |
+| `playground` | `jevplayground.com/api/evaluate` | 无（第三方，试用） | `typesafe-ai/jev` |
 | `opencode` | `opencode.ai/zen/v1/systemone` | `OPENCODE_API_KEY` | `jev-1.13-free`（限时免费）/ `jev-1.13` |
 | `venice` | `api.venice.ai/api/v1/decisions` | `VENICE_API_KEY` | `jev-latest` |
-| `typesafe` | `api.typesafe.ai/v1/systemone` | `TYPESAFE_API_KEY` | `jev-latest` |
+| `typesafe` **（默认）** | `api.typesafe.ai/v1/systemone` | `TYPESAFE_API_KEY` | `jev-latest` |
 
 密钥一律走**环境变量**，不要写进 payload 或 skill 文件。
 

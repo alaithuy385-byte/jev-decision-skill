@@ -27,13 +27,17 @@
 - Agent 下一步动作选择
 - 工作流 / 命令放行门禁
 
-本 Skill 把 Jev 包成一个**零依赖、开箱即用**的命令行工具，默认走免密钥通道，装上就能跑。
+本 Skill 把 Jev 包成一个**零依赖**的命令行工具，默认走 TypeSafe 官方端点（需 `TYPESAFE_API_KEY`）；手边没有 key 时，加 `--endpoint playground` 走第三方免密钥通道，第一分钟就能跑通。
 
 ---
 
 ## 30 秒上手
 
 ```bash
+# 手边没有 key：第三方免密钥通道，装上就能跑
+python scripts/jev.py --selftest --endpoint playground
+
+# 有 TYPESAFE_API_KEY：走官方通道（默认）
 python scripts/jev.py --selftest
 ```
 
@@ -149,10 +153,10 @@ Agent 会在遇到「用 Jev 判断 / 给个路由 / 打个分 / 风险分级」
 
 | `--endpoint` | 地址 | 密钥 | 模型名 |
 |---|---|---|---|
-| `playground` **(默认)** | `jevplayground.com/api/evaluate` | **不需要** | `typesafe-ai/jev` |
+| `playground` | `jevplayground.com/api/evaluate` | 不需要（第三方，试用） | `typesafe-ai/jev` |
 | `opencode` | `opencode.ai/zen/v1/systemone` | `OPENCODE_API_KEY` | `jev-1.13-free` / `jev-1.13` |
 | `venice` | `api.venice.ai/api/v1/decisions` | `VENICE_API_KEY` | `jev-latest` |
-| `typesafe` | `api.typesafe.ai/v1/systemone` | `TYPESAFE_API_KEY` | `jev-latest` |
+| `typesafe` **(默认)** | `api.typesafe.ai/v1/systemone` | `TYPESAFE_API_KEY` | `jev-latest` |
 
 ```bash
 JEV_ENDPOINT=venice VENICE_API_KEY=xxx python scripts/jev.py payload.json
@@ -163,7 +167,7 @@ python scripts/jev.py payload.json --endpoint venice
 其他命令行参数：`--json`、`--proxy <url>`、`--timeout <秒>`、`--selftest`。
 网络策略：**先直连，失败自动重试本地代理** `127.0.0.1:7890` / `127.0.0.1:58252`。
 
-> **隐私提醒**：默认的 playground 是**第三方站点**，你发送的 `state` 会完整落到它那里。
+> **隐私提醒**：`playground` 是**第三方站点**，你发送的 `state` 会完整落到它那里。
 > 审代码 diff、客户消息这类材料请先脱敏。需要更强隐私保证时用 Venice（不保留 state、不用于训练）。
 
 ---

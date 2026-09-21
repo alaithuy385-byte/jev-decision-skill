@@ -3,13 +3,14 @@
 """
 jev.py - 命令行调用 TypeSafe AI 的 Jev（System One）决策模型。
 
-默认走公开的免密钥通道（jevplayground.com），不需要任何 API key。
-如日后拿到 key，可用 --endpoint 切到 OpenCode Zen / Venice / TypeSafe 官方。
+默认走 TypeSafe 官方的 System One 端点，需要 TYPESAFE_API_KEY。
+手边没有 key、想先跑通链路，用 --endpoint playground 切到第三方免密钥通道（有限速）。
 
 用法:
     python jev.py payload.json                 # 人类可读输出
     python jev.py payload.json --json          # 原始 JSON
-    python jev.py payload.json --endpoint opencode
+    python jev.py payload.json --endpoint typesafe   # 默认
+    python jev.py payload.json --endpoint playground # 免密钥，试用
     python jev.py --selftest                   # 自检（跑一个内置样例）
 
 payload.json 格式（原生 Jev 形态）:
@@ -63,7 +64,7 @@ ENDPOINTS = {
         "unwrap": None,
         "env": "VENICE_API_KEY",
     },
-    # TypeSafe 官方，需要 TYPESAFE_API_KEY
+    # TypeSafe 官方，默认端点，需要 TYPESAFE_API_KEY
     "typesafe": {
         "url": "https://api.typesafe.ai/v1/systemone",
         "auth": True,
@@ -110,7 +111,10 @@ def validate(payload: dict) -> list[str]:
     if not isinstance(state, str) or not state.strip():
         problems.append("缺少 state（非空字符串）")
     elif len(state) > 8000:
-        problems.append(f"state 过长：{len(state)} 字符（playground 上限 8000）")
+        problems.append(
+            f"state 过长：{len(state)} 字符"
+            "（playground 通道上限 8000，其他通道通常更宽）"
+        )
     questions = payload.get("questions")
     if not isinstance(questions, dict) or not questions:
         problems.append("缺少 questions（非空字典，key 为问题 id）")
@@ -169,7 +173,8 @@ def call(payload: dict, endpoint: str, timeout: float, proxy_arg: str | None):
         if not key:
             raise SystemExit(
                 f"端点 {endpoint} 需要环境变量 {spec['env']}，当前未设置。\n"
-                f"若暂时没有 key，用默认的 --endpoint playground（免密钥）。"
+                f"若暂时没有 key，可以先用 --endpoint playground"
+                f"（第三方免密钥通道，仅供试用）。"
             )
         headers["Authorization"] = f"Bearer {key}"
 
@@ -261,8 +266,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="调用 TypeSafe Jev 决策模型")
     ap.add_argument("payload", nargs="?", help="JSON 文件路径；省略则读 stdin")
     ap.add_argument("--json", action="store_true", help="输出原始 JSON")
-    ap.add_argument("--endpoint", default=os.environ.get("JEV_ENDPOINT", "playground"),
-                    choices=sorted(ENDPOINTS), help="默认 playground（免密钥）")
+    ap.add_argument("--endpoint", default=os.environ.get("JEV_ENDPOINT", "typesafe"),
+                    choices=sorted(ENDPOINTS),
+                    help="默认 typesafe（需 TYPESAFE_API_KEY）；无 key 用 --endpoint playground")
     ap.add_argument("--proxy", default=os.environ.get("JEV_PROXY"),
                     help="指定代理；默认先直连，失败再试本地 7890/58252")
     ap.add_argument("--timeout", type=float, default=60.0)
