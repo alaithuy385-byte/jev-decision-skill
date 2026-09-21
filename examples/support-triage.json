@@ -1,0 +1,28 @@
+{
+  "state": "Subject: 会员被重复扣费\n\n你好，我这个月的会员被扣了两次钱，一次 39 元一次 39 元。我已经在 App 里联系客服两次了，到现在都没有人回复我。麻烦今天之内给我处理掉，不然我要投诉了。订单号 2026091800231。",
+  "questions": {
+    "is_urgent": {
+      "type": "boolean",
+      "instructions": "这条消息是否明确提出了时间要求或表达了不处理就会升级的意图？"
+    },
+    "department": {
+      "type": "choice",
+      "instructions": "这条请求该路由给哪个团队？",
+      "criteria": {
+        "billing": "扣费、账单、退款、订阅、发票问题",
+        "technical": "功能故障、报错、无法使用",
+        "logistics": "物流、发货、退换货",
+        "other": "无法归入以上任何一类"
+      }
+    },
+    "frustration": {
+      "type": "score",
+      "instructions": "客户的愤怒程度如何？",
+      "criteria": ["平静", "略有不满", "明显不满", "愤怒", "极度愤怒"]
+    },
+    "has_order_id": {
+      "type": "boolean",
+      "instructions": "消息中是否包含可定位订单的编号或其他唯一标识？"
+    }
+  }
+}

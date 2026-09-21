@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.log
+
+# 本地测试产物
+out.json
+result.json
+*.local.json
